@@ -1,0 +1,2136 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SAMS — School Attendance Management System (CBSE Classes 1–10)</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            navy: {
+              DEFAULT: '#173B67',
+              50: '#F0F5FA',
+              100: '#D9E6F2',
+              600: '#1B4980',
+              700: '#173B67',
+              800: '#112C4E',
+              900: '#0B1D35',
+            },
+            pageBg: '#F5F7FA',
+            primaryText: '#172B4D',
+            secondaryText: '#64748B',
+            present: '#16A34A',
+            absent: '#DC2626',
+            leave: '#F59E0B',
+            holiday: '#94A3B8',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #F5F7FA;
+      color: #172B4D;
+    }
+    html.dark body {
+      background-color: #0B1120;
+      color: #F1F5F9;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
+    }
+    html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+    }
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      body {
+        background: #FFFFFF !important;
+        color: #000000 !important;
+      }
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-navy selection:text-white transition-colors duration-200">
+
+  <!-- =========================================================================
+       1. SPLIT-SCREEN LOGIN PAGE (DEFAULT VISIBLE ON LOAD)
+       ========================================================================= -->
+  <div id="auth-view" class="min-h-screen w-full flex items-center justify-center bg-pageBg dark:bg-slate-950 p-4">
+    <!-- Right Section: Email & Password Login Form -->
+    <div class="w-full max-w-lg bg-white dark:bg-slate-900 p-8 lg:p-12 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+      <div class="w-full max-w-md space-y-6">
+        <div>
+          <h2 class="text-2xl font-bold text-primaryText dark:text-white">Sign in to SAMS Portal</h2>
+          <p class="text-sm text-secondaryText dark:text-slate-400 mt-1">
+            Enter your registered school email and password to continue.
+          </p>
+        </div>
+
+        <!-- Login Error Alert -->
+        <div id="login-error-box" class="hidden p-3.5 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-900 text-absent text-xs font-semibold flex items-center gap-2">
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+          <span id="login-error-text">Invalid email or password.</span>
+        </div>
+
+        <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-primaryText dark:text-slate-200 mb-1.5">Registered Email Address *</label>
+            <div class="relative">
+              <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+              <input id="login-email" type="email" required value=""
+                class="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primaryText dark:text-white focus:outline-none focus:ring-2 focus:ring-navy"
+                placeholder="xyz@gmail.com" />
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-semibold text-primaryText dark:text-slate-200">Password *</label>
+              <button type="button" onclick="showToast('Please contact School Admin to reset your password.', 'info')" class="text-xs font-medium text-navy dark:text-blue-400 hover:underline">
+                Forgot password?
+              </button>
+            </div>
+            <div class="relative">
+              <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+              <input id="login-password" type="password" required value=""
+                class="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-primaryText dark:text-white focus:outline-none focus:ring-2 focus:ring-navy"
+                placeholder="Enter your password" />
+              <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs">
+            <label class="flex items-center gap-2 cursor-pointer text-secondaryText dark:text-slate-400">
+              <input type="checkbox" checked class="rounded border-slate-300 text-navy focus:ring-navy" />
+              Keep me signed in
+            </label>
+            <span class="text-secondaryText dark:text-slate-400">Role verified automatically</span>
+          </div>
+
+          <button type="submit" class="w-full py-3 px-4 bg-navy hover:bg-navy-600 text-white font-semibold text-sm rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+            <span>Login to Portal</span>
+            <i data-lucide="log-in" class="w-4 h-4"></i>
+          </button>
+        </form>
+
+
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       2. MAIN APPLICATION SHELL (HIDDEN UNTIL LOGGED IN)
+       ========================================================================= -->
+  <div id="app-shell" class="hidden min-h-screen flex flex-col lg:flex-row">
+    
+    <!-- Mobile Sidebar Backdrop -->
+    <div id="mobile-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-900/50 z-30 hidden lg:hidden"></div>
+
+    <!-- FIXED NAVY SIDEBAR -->
+    <aside id="app-sidebar" class="no-print fixed lg:static inset-y-0 left-0 z-40 w-64 bg-navy-700 text-white flex flex-col justify-between transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out shrink-0">
+      <div>
+        <div class="h-16 px-5 flex items-center justify-between border-b border-white/10">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center border border-white/20">
+              <i data-lucide="graduation-cap" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-base tracking-tight">SAMS</span>
+                <span class="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/20">CBSE</span>
+              </div>
+              <p class="text-[11px] text-blue-200 leading-none mt-0.5">Classes 1 to 10 ERP</p>
+            </div>
+          </div>
+          <button onclick="toggleMobileSidebar()" class="lg:hidden text-blue-200 hover:text-white">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Role Indicator Badge inside Sidebar -->
+        <div class="px-4 py-3 border-b border-white/10 bg-navy-800/60">
+          <p class="text-[10px] uppercase tracking-wider text-blue-300 font-semibold">Logged In Role</p>
+          <div class="flex items-center justify-between mt-1">
+            <span id="sidebar-role-label" class="text-xs font-semibold text-white">Super Admin Portal</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </div>
+        </div>
+
+        <!-- Dynamic Navigation Links -->
+        <nav id="sidebar-nav" class="p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-190px)] custom-scrollbar"></nav>
+      </div>
+
+      <!-- Sidebar Footer: Logged-in User & Logout Button -->
+      <div class="p-3 border-t border-white/10 bg-navy-800/40">
+        <div class="flex items-center justify-between px-2 py-1.5">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div id="sidebar-avatar" class="w-8 h-8 rounded-full bg-blue-500/30 border border-white/20 flex items-center justify-center font-bold text-xs text-white shrink-0">
+              SA
+            </div>
+            <div class="truncate">
+              <p id="sidebar-user-name" class="text-xs font-semibold text-white truncate">Mr. Prince Chaudhary</p>
+              <p id="sidebar-user-sub" class="text-[11px] text-blue-200 truncate">kumarprince48503@gmail.com</p>
+            </div>
+          </div>
+          <button onclick="logoutUser()" title="Logout" class="px-2.5 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500 text-red-200 hover:text-white text-xs font-semibold transition flex items-center gap-1 shrink-0">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Logout
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT COLUMN -->
+    <div class="flex-1 flex flex-col min-w-0">
+      
+      <!-- TOP NAVIGATION BAR -->
+      <header class="no-print h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 flex items-center justify-between sticky top-0 z-20">
+        <div class="flex items-center gap-3">
+          <button onclick="toggleMobileSidebar()" class="lg:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+          <div>
+            <h1 id="topbar-title" class="text-base lg:text-lg font-bold text-primaryText dark:text-white leading-tight">
+              Admin Analytics Dashboard
+            </h1>
+            <p id="topbar-subtitle" class="text-xs text-secondaryText dark:text-slate-400 hidden sm:block">
+              Real-time CBSE attendance metrics across Classes 1 to 10
+            </p>
+          </div>
+        </div>
+
+        <!-- Right: Session Badge, Theme Toggle, Logout -->
+        <div class="flex items-center gap-2.5">
+          <!-- Assigned Scope Pill -->
+          <div id="topbar-scope-badge" class="hidden sm:flex items-center gap-1.5 bg-navy-50 dark:bg-slate-800 border border-navy-100 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-navy dark:text-blue-300">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+            <span id="topbar-scope-text">Full School Access</span>
+          </div>
+
+          <!-- Academic Session Selector -->
+          <div class="hidden md:flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-semibold text-primaryText dark:text-slate-200">
+            <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-navy dark:text-blue-400"></i>
+            <span>Session 2026–2027</span>
+          </div>
+
+          <!-- Dark / Light Mode Button -->
+          <button onclick="toggleDarkMode()" title="Toggle Light/Dark Theme" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50">
+            <i id="theme-icon" data-lucide="moon" class="w-4 h-4"></i>
+          </button>
+
+          <!-- Topbar Logout Button -->
+          <button onclick="logoutUser()" class="px-3 py-1.5 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/50 text-absent hover:bg-absent hover:text-white text-xs font-semibold transition flex items-center gap-1.5">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Switch Account / Logout</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- =====================================================================
+           DYNAMIC VIEW CONTAINER
+           ===================================================================== -->
+      <main class="flex-1 p-4 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
+
+        <!-- ===================================================================
+             VIEW 1: ADMIN DASHBOARD (ADMIN ONLY)
+             =================================================================== -->
+        <section id="view-admin-dashboard" class="space-y-6">
+          <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-present border border-emerald-200 dark:border-emerald-800">Live Attendance Engine</span>
+                <span class="text-xs text-secondaryText dark:text-slate-400">Friday, 06 Nov 2026</span>
+              </div>
+              <h2 class="text-xl font-bold text-primaryText dark:text-white mt-1">School-Wide Attendance Overview (Classes 1–10)</h2>
+            </div>
+            <div class="flex flex-wrap items-center gap-2.5">
+              <button onclick="navigateTo('admin-attendance')" class="px-4 py-2 rounded-xl bg-navy hover:bg-navy-600 text-white text-xs font-semibold transition flex items-center gap-2 shadow-sm">
+                <i data-lucide="check-square" class="w-4 h-4"></i> Check / Mark Class Attendance
+              </button>
+              <button onclick="navigateTo('admin-students')" class="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-primaryText dark:text-white text-xs font-semibold hover:bg-slate-50 transition flex items-center gap-2">
+                <i data-lucide="users" class="w-4 h-4"></i> Manage Student Logins
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 KPI STAT CARDS -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-secondaryText dark:text-slate-400">Total Students</span>
+                <div class="w-10 h-10 rounded-xl bg-navy-50 dark:bg-slate-800 flex items-center justify-center text-navy dark:text-blue-400">
+                  <i data-lucide="users" class="w-5 h-5"></i>
+                </div>
+              </div>
+              <p id="kpi-total-students" class="text-3xl font-bold text-primaryText dark:text-white mt-3">12</p>
+              <div class="flex items-center justify-between mt-2 text-xs">
+                <span class="text-emerald-600 font-medium">Active Student Logins</span>
+                <span class="text-secondaryText dark:text-slate-400">Classes 1–10</span>
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-secondaryText dark:text-slate-400">Present Today</span>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-present">
+                  <i data-lucide="user-check" class="w-5 h-5"></i>
+                </div>
+              </div>
+              <p id="kpi-present-today" class="text-3xl font-bold text-present mt-3">9</p>
+              <div class="flex items-center justify-between mt-2 text-xs">
+                <span class="text-present font-semibold">Verified Roll Call</span>
+                <span class="text-secondaryText dark:text-slate-400">Live Count</span>
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-secondaryText dark:text-slate-400">Absent / Leave Today</span>
+                <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/60 flex items-center justify-center text-absent">
+                  <i data-lucide="user-x" class="w-5 h-5"></i>
+                </div>
+              </div>
+              <div class="flex items-baseline gap-2 mt-3">
+                <p id="kpi-absent-today" class="text-3xl font-bold text-absent">2</p>
+                <span id="kpi-leave-today" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-leave border border-amber-200 dark:border-amber-800">+ 1 Leave</span>
+              </div>
+              <div class="flex items-center justify-between mt-2 text-xs">
+                <span class="text-absent font-medium">Parent Alerts Active</span>
+                <span class="text-secondaryText dark:text-slate-400">Today's Status</span>
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-secondaryText dark:text-slate-400">Overall Attendance %</span>
+                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-slate-800 flex items-center justify-center text-navy dark:text-blue-400">
+                  <i data-lucide="award" class="w-5 h-5"></i>
+                </div>
+              </div>
+              <p id="kpi-overall-pct" class="text-3xl font-bold text-primaryText dark:text-white mt-3">86.4%</p>
+              <div class="flex items-center justify-between mt-2 text-xs">
+                <span class="text-emerald-600 font-semibold">Above 75% Mandate</span>
+                <span class="text-secondaryText dark:text-slate-400">140 Working Days</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CHARTS ROW -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <div>
+                  <h3 class="font-bold text-base text-primaryText dark:text-white">Class-Wise Attendance Comparison (Classes 1–10)</h3>
+                  <p class="text-xs text-secondaryText dark:text-slate-400">Real-time attendance percentage vs 75% CBSE benchmark</p>
+                </div>
+              </div>
+              <div class="h-64">
+                <canvas id="classComparisonChart"></canvas>
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+              <div>
+                <h3 class="font-bold text-base text-primaryText dark:text-white">Low Attendance Alerts (&lt;75%)</h3>
+                <p class="text-xs text-secondaryText dark:text-slate-400 mb-3">Students requiring immediate CBSE compliance notice</p>
+                <div id="dashboard-low-attendance-list" class="space-y-2.5 max-h-56 overflow-y-auto custom-scrollbar"></div>
+              </div>
+              <button onclick="navigateTo('admin-tracker')" class="mt-4 w-full py-2 rounded-xl bg-navy-50 dark:bg-slate-800 text-navy dark:text-blue-300 font-semibold text-xs hover:bg-navy hover:text-white transition">
+                View Full 75% Tracker →
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             VIEW 2: STUDENT MANAGEMENT (WITH EMAIL & PASSWORD IN ADMIN PANEL)
+             =================================================================== -->
+        <section id="view-admin-students" class="hidden space-y-6">
+          <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-primaryText dark:text-white">Student Directory & Login Credentials</h2>
+              <p id="student-dir-subtitle" class="text-xs text-secondaryText dark:text-slate-400 mt-0.5">
+                Admin can view/edit student details, Login Email, and Password. Students use these credentials to log in.
+              </p>
+            </div>
+            <div id="student-admin-actions" class="flex flex-wrap items-center gap-2.5">
+              <button onclick="exportStudentsCSV()" class="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-primaryText dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4 text-present"></i> Export CSV
+              </button>
+              <button onclick="openAddStudentModal()" class="px-4 py-2 rounded-xl bg-navy hover:bg-navy-600 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="user-plus" class="w-4 h-4"></i> Add New Student
+              </button>
+            </div>
+          </div>
+
+          <!-- Search & Filter Controls -->
+          <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="lg:col-span-2 relative">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5"></i>
+              <input id="student-search-input" oninput="renderStudentTable()" type="text" placeholder="Search by student name, email, roll no, or parent name..."
+                class="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-primaryText dark:text-white focus:outline-none focus:ring-2 focus:ring-navy" />
+            </div>
+            <div>
+              <select id="student-filter-class" onchange="renderStudentTable()" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-primaryText dark:text-white font-semibold">
+                <option value="ALL">All Classes (Class 1 – 10)</option>
+                <option value="10">Class 10</option>
+                <option value="9">Class 9</option>
+                <option value="8">Class 8</option>
+                <option value="7">Class 7</option>
+                <option value="6">Class 6</option>
+                <option value="5">Class 5</option>
+                <option value="4">Class 4</option>
+                <option value="3">Class 3</option>
+                <option value="2">Class 2</option>
+                <option value="1">Class 1</option>
+              </select>
+            </div>
+            <div>
+              <select id="student-filter-section" onchange="renderStudentTable()" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-primaryText dark:text-white font-semibold">
+                <option value="ALL">All Sections (A–E)</option>
+                <option value="A">Section A</option>
+                <option value="B">Section B</option>
+                <option value="C">Section C</option>
+                <option value="D">Section D</option>
+                <option value="E">Section E</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Student Table Card -->
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 text-[11px] font-bold uppercase tracking-wider text-secondaryText dark:text-slate-400">
+                    <th class="py-3.5 px-4">Student Name</th>
+                    <th class="py-3.5 px-4">Roll No</th>
+                    <th class="py-3.5 px-4">Class & Sec</th>
+                    <th class="py-3.5 px-4">Parent & Phone</th>
+                    <th class="py-3.5 px-4">Login Email & Password</th>
+                    <th class="py-3.5 px-4">Attendance %</th>
+                    <th class="py-3.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="student-table-body" class="divide-y divide-slate-100 dark:divide-slate-800 text-xs"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             VIEW 3: CLASS ATTENDANCE CHECK & MARKING ENGINE
+             (TEACHER DIRECT LANDING VIEW - LOCKED TO TEACHER'S ASSIGNED CLASS)
+             =================================================================== -->
+        <section id="view-admin-attendance" class="hidden space-y-6">
+          <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span id="attendance-role-pill" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-navy-50 dark:bg-slate-800 text-navy dark:text-blue-400">
+                    Class Student Attendance Register
+                  </span>
+                  <span id="attendance-lock-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                    Open for Marking
+                  </span>
+                </div>
+                <h2 id="attendance-heading-title" class="text-xl font-bold text-primaryText dark:text-white mt-1">
+                  Check & Mark Class Student Attendance
+                </h2>
+                <p id="attendance-heading-sub" class="text-xs text-secondaryText dark:text-slate-400 mt-0.5">
+                  Select date and mark Present (P), Absent (A), or Leave (L) for students of this class.
+                </p>
+              </div>
+
+              <!-- Date, Class, Section Controls (Locked for Teachers to their single class!) -->
+              <div class="flex flex-wrap items-center gap-2.5">
+                <div>
+                  <label class="block text-[10px] font-bold uppercase text-secondaryText dark:text-slate-400 mb-1">Attendance Date</label>
+                  <input id="mark-date" type="date" value="2026-11-06" onchange="handleAttendanceDateChange()"
+                    class="px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-primaryText dark:text-white" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold uppercase text-secondaryText dark:text-slate-400 mb-1">Class</label>
+                  <select id="mark-class" onchange="loadAttendanceSheet()" class="px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-primaryText dark:text-white disabled:opacity-70 disabled:cursor-not-allowed">
+                    <option value="10">Class 10</option>
+                    <option value="9">Class 9</option>
+                    <option value="8">Class 8</option>
+                    <option value="7">Class 7</option>
+                    <option value="6">Class 6</option>
+                    <option value="5">Class 5</option>
+                    <option value="4">Class 4</option>
+                    <option value="3">Class 3</option>
+                    <option value="2">Class 2</option>
+                    <option value="1">Class 1</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold uppercase text-secondaryText dark:text-slate-400 mb-1">Section</label>
+                  <select id="mark-section" onchange="loadAttendanceSheet()" class="px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-primaryText dark:text-white disabled:opacity-70 disabled:cursor-not-allowed">
+                    <option value="A">Section A</option>
+                    <option value="B">Section B</option>
+                    <option value="C">Section C</option>
+                    <option value="D">Section D</option>
+                    <option value="E">Section E</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Summary Pills + Bulk Actions -->
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold">
+                  Class Strength: <span id="sheet-count-total" class="font-bold">0</span>
+                </div>
+                <div class="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-present text-xs font-semibold border border-emerald-200 dark:border-emerald-800">
+                  Present (P): <span id="sheet-count-present" class="font-bold">0</span>
+                </div>
+                <div class="px-3 py-1.5 rounded-xl bg-red-50 dark:bg-red-950/60 text-absent text-xs font-semibold border border-red-200 dark:border-red-800">
+                  Absent (A): <span id="sheet-count-absent" class="font-bold">0</span>
+                </div>
+                <div class="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-leave text-xs font-semibold border border-amber-200 dark:border-amber-800">
+                  Leave (L): <span id="sheet-count-leave" class="font-bold">0</span>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="relative">
+                  <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5"></i>
+                  <input id="sheet-search" oninput="renderAttendanceRows()" type="text" placeholder="Search roll or student..."
+                    class="pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-primaryText dark:text-white" />
+                </div>
+                <button onclick="markAllStatus('P')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition">
+                  Mark All Present
+                </button>
+                <button onclick="markAllStatus('A')" class="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition">
+                  Mark All Absent
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Attendance Sheet Table -->
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 text-[11px] font-bold uppercase tracking-wider text-secondaryText dark:text-slate-400">
+                    <th class="py-3.5 px-4 w-20">Roll No</th>
+                    <th class="py-3.5 px-4">Student Name & Guardian</th>
+                    <th class="py-3.5 px-4">Overall Attendance %</th>
+                    <th class="py-3.5 px-4 text-center">Today's Attendance Status (P / A / L)</th>
+                    <th class="py-3.5 px-4">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody id="attendance-sheet-body" class="divide-y divide-slate-100 dark:divide-slate-800 text-xs"></tbody>
+              </table>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <p class="text-xs text-secondaryText dark:text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="shield-check" class="w-4 h-4 text-navy dark:text-blue-400"></i>
+                <span id="attendance-footer-note">Submitting saves today's attendance to the school database.</span>
+              </p>
+              <div class="flex items-center gap-2.5">
+                <button onclick="submitFinalAttendance()" class="px-5 py-2.5 rounded-xl bg-navy hover:bg-navy-600 text-white text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+                  <i data-lucide="check-circle-2" class="w-4 h-4"></i> Save & Submit Class Attendance
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             VIEW 4: 75% CBSE ATTENDANCE TRACKER
+             =================================================================== -->
+        <section id="view-admin-tracker" class="hidden space-y-6">
+          <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">CBSE 75% Mandate</span>
+              <h2 class="text-xl font-bold text-primaryText dark:text-white mt-1">75% Attendance Compliance Tracker</h2>
+              <p class="text-xs text-secondaryText dark:text-slate-400 mt-0.5">
+                Monitor student attendance percentages and minimum future days needed to reach 75%.
+              </p>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase text-secondaryText dark:text-slate-400">
+                    <th class="py-3 px-3">Student & Roll No</th>
+                    <th class="py-3 px-3">Class & Sec</th>
+                    <th class="py-3 px-3">Present / Working Days</th>
+                    <th class="py-3 px-3">Attendance %</th>
+                    <th class="py-3 px-3">Category</th>
+                    <th class="py-3 px-3">75% Requirement Status</th>
+                  </tr>
+                </thead>
+                <tbody id="tracker-table-body" class="divide-y divide-slate-100 dark:divide-slate-800 text-xs"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             VIEW 5: ATTENDANCE REPORTS & EXPORTS
+             =================================================================== -->
+        <section id="view-admin-reports" class="hidden space-y-6">
+          <div class="no-print bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-primaryText dark:text-white">Class Attendance Reports & Exports</h2>
+              <p class="text-xs text-secondaryText dark:text-slate-400">Download Excel/CSV or print official attendance register</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="exportReportCSV()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export Excel / CSV
+              </button>
+              <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-navy hover:bg-navy-600 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="printer" class="w-4 h-4"></i> Print / Save PDF
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
+            <div class="border-b border-slate-200 dark:border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <p class="text-xs font-bold uppercase tracking-wider text-navy dark:text-blue-400">Delhi Public Model Senior Secondary School (CBSE)</p>
+                <h3 id="printable-report-title" class="text-lg font-bold text-primaryText dark:text-white mt-0.5">Official Attendance Register — Session 2026–2027</h3>
+              </div>
+              <div class="no-print flex flex-wrap items-end gap-2 text-xs">
+                <label class="font-semibold">From date
+                  <input id="report-from-date" type="date" onchange="renderReportsView()" class="block mt-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+                </label>
+                <label class="font-semibold">To date
+                  <input id="report-to-date" type="date" onchange="renderReportsView()" class="block mt-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+                </label>
+                <label class="font-semibold">Class
+                  <select id="report-class-filter" onchange="renderReportsView()" class="block mt-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"><option value="ALL">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select>
+                </label>
+                <label class="font-semibold">Section
+                  <select id="report-section-filter" onchange="renderReportsView()" class="block mt-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"><option value="ALL">All</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select>
+                </label>
+                <span id="report-date-status" class="text-secondaryText pb-2"></span>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-[11px] font-bold uppercase text-secondaryText dark:text-slate-400">
+                    <th class="py-3 px-4">Roll No</th>
+                    <th class="py-3 px-4">Student Name</th>
+                    <th class="py-3 px-4">Class & Sec</th>
+                    <th class="py-3 px-4">Working Days</th>
+                    <th class="py-3 px-4">Present</th>
+                    <th class="py-3 px-4">Absent</th>
+                    <th class="py-3 px-4">Leave</th>
+                    <th class="py-3 px-4">Attendance %</th>
+                    <th class="py-3 px-4">Holidays</th>
+                  </tr>
+                </thead>
+                <tbody id="report-table-body" class="divide-y divide-slate-100 dark:divide-slate-800 text-xs"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             VIEW 6: TEACHER MANAGEMENT (ADMIN PANEL - WITH EMAIL, PASSWORD, SINGLE CLASS)
+             =================================================================== -->
+        <section id="view-admin-teachers" class="hidden space-y-6">
+          <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-primaryText dark:text-white">Teacher Directory, Assigned Class & Login Credentials</h2>
+              <p class="text-xs text-secondaryText dark:text-slate-400">
+                Each teacher is assigned to <strong>one specific Class & Section</strong>. Click <strong>"Edit Teacher"</strong> to change Name, Phone, Class, Email, or Password.
+              </p>
+            </div>
+            <button onclick="openAddTeacherModal()" class="px-4 py-2 rounded-xl bg-navy hover:bg-navy-600 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="user-plus" class="w-4 h-4"></i> Add New Teacher
+            </button>
+          </div>
+
+          <div id="teacher-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- ===================================================================
+             VIEW 7: STUDENT PORTAL & MONTHLY CALENDAR (STUDENT SELF VIEW)
+             =================================================================== -->
+        <section id="view-student-portal" class="hidden space-y-6">
+          <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div id="student-portal-avatar" class="w-14 h-14 rounded-2xl bg-navy text-white font-bold text-lg flex items-center justify-center shadow-sm">
+                AS
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 id="student-portal-name" class="text-xl font-bold text-primaryText dark:text-white">Aarav Sharma</h2>
+                  <span id="student-portal-class-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-navy-50 dark:bg-slate-800 text-navy dark:text-blue-400">Class 10 - Section A</span>
+                </div>
+                <p id="student-portal-meta" class="text-xs text-secondaryText dark:text-slate-400 mt-0.5"></p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <!-- Visible only when Admin previews student portal -->
+              <select id="student-demo-selector" onchange="renderStudentPortal(this.value)" class="hidden px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold"></select>
+              <button onclick="window.print()" class="px-3.5 py-2 rounded-xl bg-navy text-white text-xs font-semibold flex items-center gap-1.5">
+                <i data-lucide="download" class="w-4 h-4"></i> Print Report
+              </button>
+            </div>
+          </div>
+
+          <!-- 5 Student KPI Cards -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <span class="text-[11px] font-semibold uppercase text-secondaryText dark:text-slate-400">Overall Attendance</span>
+              <p id="st-kpi-pct" class="text-2xl font-bold text-present mt-1">92.9%</p>
+              <span id="st-kpi-badge" class="inline-block mt-1 text-[11px] font-semibold text-emerald-600">Excellent</span>
+            </div>
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <span class="text-[11px] font-semibold uppercase text-secondaryText dark:text-slate-400">Today's Status</span>
+              <p id="st-kpi-today" class="text-2xl font-bold text-present mt-1">Present</p>
+              <span class="inline-block mt-1 text-[11px] text-secondaryText dark:text-slate-400">06 Nov 2026</span>
+            </div>
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <span class="text-[11px] font-semibold uppercase text-secondaryText dark:text-slate-400">Present Days</span>
+              <p id="st-kpi-present" class="text-2xl font-bold text-present mt-1">130</p>
+              <span class="inline-block mt-1 text-[11px] text-secondaryText">Out of 140 Days</span>
+            </div>
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <span class="text-[11px] font-semibold uppercase text-secondaryText dark:text-slate-400">Absent Days</span>
+              <p id="st-kpi-absent" class="text-2xl font-bold text-absent mt-1">6</p>
+              <span class="inline-block mt-1 text-[11px] text-absent font-medium">Recorded Absent</span>
+            </div>
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm col-span-2 sm:col-span-1">
+              <span class="text-[11px] font-semibold uppercase text-secondaryText dark:text-slate-400">Approved Leave</span>
+              <p id="st-kpi-leave" class="text-2xl font-bold text-leave mt-1">4</p>
+              <span class="inline-block mt-1 text-[11px] text-leave font-medium">Medical / Official</span>
+            </div>
+          </div>
+
+          <!-- Monthly Calendar & 75% Progress -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <div>
+                  <h3 class="font-bold text-base text-primaryText dark:text-white">Monthly Attendance Calendar — November 2026</h3>
+                  <p class="text-xs text-secondaryText dark:text-slate-400">Green: Present • Red: Absent • Orange: Leave • Grey: Holiday</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-7 gap-2 text-center text-[11px] font-bold uppercase text-secondaryText dark:text-slate-400 mb-2">
+                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+              </div>
+              <div id="student-calendar-grid" class="grid grid-cols-7 gap-2"></div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+              <div>
+                <h3 class="font-bold text-base text-primaryText dark:text-white">CBSE 75% Eligibility Tracker</h3>
+                <p class="text-xs text-secondaryText dark:text-slate-400 mt-0.5">Minimum 75% attendance required for CBSE Board/Annual exams</p>
+
+                <div class="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                  <div class="flex items-center justify-between text-xs font-bold mb-2">
+                    <span>Attendance Progress</span>
+                    <span id="st-progress-label" class="text-present">92.9%</span>
+                  </div>
+                  <div class="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div id="st-progress-bar" class="h-full bg-present rounded-full transition-all duration-300" style="width: 92.9%"></div>
+                  </div>
+                  <p id="st-eligibility-note" class="text-xs text-secondaryText dark:text-slate-300 mt-3 leading-relaxed"></p>
+                </div>
+              </div>
+              <div class="text-[11px] text-secondaryText dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3">
+                Read-Only Student Portal • Attendance is marked by your Class Teacher.
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       3. ADD NEW STUDENT MODAL (WITH EMAIL & PASSWORD INSTEAD OF USERNAME)
+       ========================================================================= -->
+  <div id="add-student-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 bg-navy text-white flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-base">Add New Student & Login Account</h3>
+          <p class="text-xs text-blue-200">Student can log in immediately using the Email & Password below</p>
+        </div>
+        <button onclick="closeAddStudentModal()" class="text-blue-200 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="add-student-form" onsubmit="handleAddStudentSubmit(event)" class="p-6 space-y-4 text-xs">
+        <div id="student-form-error" class="hidden p-3 rounded-xl bg-red-50 text-absent border border-red-200 font-medium"></div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label class="block font-semibold mb-1">Student Full Name *</label>
+            <input id="new-st-name" type="text" required placeholder="e.g. Riya Verma"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Roll Number *</label>
+            <input id="new-st-roll" type="number" min="1" required placeholder="e.g. 7"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Class (1–10) *</label>
+            <select id="new-st-class" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+              <option value="10">Class 10</option>
+              <option value="9">Class 9</option>
+              <option value="8">Class 8</option>
+              <option value="7">Class 7</option>
+              <option value="6">Class 6</option>
+              <option value="5">Class 5</option>
+              <option value="4">Class 4</option>
+              <option value="3">Class 3</option>
+              <option value="2">Class 2</option>
+              <option value="1">Class 1</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Section *</label>
+            <select id="new-st-section" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+              <option value="A">Section A</option>
+              <option value="B">Section B</option>
+              <option value="C">Section C</option>
+              <option value="D">Section D</option>
+              <option value="E">Section E</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Parent / Guardian Name *</label>
+            <input id="new-st-parent" type="text" required placeholder="e.g. Rajesh Verma"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Parent Contact Number *</label>
+            <input id="new-st-phone" type="text" required placeholder="98110XXXXX"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Student Login Email *</label>
+            <input id="new-st-email" type="email" required placeholder="riya@school.com"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Student Login Password *</label>
+            <input id="new-st-pass" type="text" required value="Student@123"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono" />
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeAddStudentModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-navy text-white font-semibold">Create Student Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       4. EDIT STUDENT MODAL (WITH EMAIL & PASSWORD EDIT)
+       ========================================================================= -->
+  <div id="edit-student-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 bg-navy text-white flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-base">Edit Student Information & Login</h3>
+          <p class="text-xs text-blue-200">Update name, roll number, class, email, or password</p>
+        </div>
+        <button onclick="closeEditStudentModal()" class="text-blue-200 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="edit-student-form" onsubmit="handleEditStudentSubmit(event)" class="p-6 space-y-4 text-xs">
+        <input type="hidden" id="edit-st-id" />
+        <div id="edit-student-form-error" class="hidden p-3 rounded-xl bg-red-50 text-absent border border-red-200 font-medium"></div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label class="block font-semibold mb-1">Full Name *</label>
+            <input id="edit-st-name" type="text" required
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Roll Number *</label>
+            <input id="edit-st-roll" type="number" min="1" required
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Class (1–10) *</label>
+            <select id="edit-st-class" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+              <option value="10">Class 10</option>
+              <option value="9">Class 9</option>
+              <option value="8">Class 8</option>
+              <option value="7">Class 7</option>
+              <option value="6">Class 6</option>
+              <option value="5">Class 5</option>
+              <option value="4">Class 4</option>
+              <option value="3">Class 3</option>
+              <option value="2">Class 2</option>
+              <option value="1">Class 1</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Section *</label>
+            <select id="edit-st-section" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+              <option value="A">Section A</option>
+              <option value="B">Section B</option>
+              <option value="C">Section C</option>
+              <option value="D">Section D</option>
+              <option value="E">Section E</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Parent / Guardian Name *</label>
+            <input id="edit-st-parent" type="text" required
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Parent Phone *</label>
+            <input id="edit-st-phone" type="text" required
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Student Login Email *</label>
+            <input id="edit-st-email" type="email" required
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Student Login Password *</label>
+            <input id="edit-st-pass" type="text" required
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Present Days (Out of 140) *</label>
+            <input id="edit-st-present" type="number" min="0" max="140" required
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Account Status *</label>
+            <select id="edit-st-status" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeEditStudentModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-navy hover:bg-navy-600 text-white font-semibold">Save Student Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       5. DELETE STUDENT CONFIRMATION MODAL
+       ========================================================================= -->
+  <div id="delete-student-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+      <div class="p-6 text-center space-y-4">
+        <div class="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-950/60 text-absent border border-red-200 flex items-center justify-center mx-auto">
+          <i data-lucide="trash-2" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-primaryText dark:text-white">Delete Student Account?</h3>
+          <p class="text-xs text-secondaryText dark:text-slate-400 mt-1">
+            Are you sure you want to delete <strong id="delete-st-summary" class="text-primaryText dark:text-white"></strong>?
+          </p>
+        </div>
+        <input type="hidden" id="delete-st-id" />
+        <div class="pt-2 flex items-center justify-center gap-2.5">
+          <button type="button" onclick="closeDeleteStudentModal()" class="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold">Cancel</button>
+          <button type="button" onclick="confirmDeleteStudent()" class="w-full py-2.5 px-4 rounded-xl bg-absent hover:bg-red-700 text-white text-xs font-semibold">Yes, Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       6. ADD / EDIT TEACHER MODAL (NAME, PHONE, SINGLE CLASS-SECTION, EMAIL, PASSWORD)
+       ========================================================================= -->
+  <div id="teacher-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 bg-navy text-white flex items-center justify-between">
+        <div>
+          <h3 id="teacher-modal-title" class="font-bold text-base">Edit Teacher Details & Login</h3>
+          <p class="text-xs text-blue-200">Update teacher Name, Number, Assigned Class, Email, and Password</p>
+        </div>
+        <button onclick="closeTeacherModal()" class="text-blue-200 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="teacher-form" onsubmit="handleTeacherFormSubmit(event)" class="p-6 space-y-4 text-xs">
+        <input type="hidden" id="teacher-mode" value="add" />
+        <input type="hidden" id="teacher-id" value="" />
+        <div id="teacher-form-error" class="hidden p-3 rounded-xl bg-red-50 text-absent border border-red-200 font-medium"></div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label class="block font-semibold mb-1">Teacher Full Name *</label>
+            <input id="t-name" type="text" required placeholder="e.g. Mrs. Sunita Deshmukh"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Phone Number *</label>
+            <input id="t-phone" type="text" required placeholder="9811145001"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Assigned Class (Single Class) *</label>
+            <select id="t-class" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-semibold">
+              <option value="10">Class 10</option>
+              <option value="9">Class 9</option>
+              <option value="8">Class 8</option>
+              <option value="7">Class 7</option>
+              <option value="6">Class 6</option>
+              <option value="5">Class 5</option>
+              <option value="4">Class 4</option>
+              <option value="3">Class 3</option>
+              <option value="2">Class 2</option>
+              <option value="1">Class 1</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Assigned Section *</label>
+            <select id="t-section" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-semibold">
+              <option value="A">Section A</option>
+              <option value="B">Section B</option>
+              <option value="C">Section C</option>
+              <option value="D">Section D</option>
+              <option value="E">Section E</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Teacher Login Email *</label>
+            <input id="t-email" type="email" required placeholder="sunita@school.com"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Teacher Login Password *</label>
+            <input id="t-password" type="text" required placeholder="Teacher@123"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono" />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block font-semibold mb-1">Subject / Department</label>
+            <input id="t-subject" type="text" required placeholder="e.g. Mathematics"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" />
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeTeacherModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-navy hover:bg-navy-600 text-white font-semibold">Save Teacher Details</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+  <!-- =========================================================================
+       7. APPLICATION LOGIC, AUTH ENGINE & LOCALSTORAGE DATABASE
+       ========================================================================= -->
+  <script>
+    const TOTAL_WORKING_DAYS = 140;
+
+    // Default Admin Account
+    const ADMIN_ACCOUNT = {
+      role: 'admin',
+      name: 'Mr. Prince Chaudhary',
+      email: 'kumarprince48503@gmail.com',
+      password: 'prince@gmail.com'
+    };
+
+    // Default Teachers (Each assigned to ONE specific Class & Section, with Email & Password)
+    const DEFAULT_TEACHERS = [
+      { id: 't-1', name: 'Mrs. Sunita Deshmukh', phone: '9811145001', classNum: '10', section: 'A', email: 'sunita@school.com', password: 'Teacher@123', subject: 'Mathematics' },
+      { id: 't-2', name: 'Mr. Rajeshwar Iyer', phone: '9811145002', classNum: '10', section: 'B', email: 'rajesh@school.com', password: 'Teacher@123', subject: 'Science' },
+      { id: 't-3', name: 'Ms. Neha Chatterjee', phone: '9811145003', classNum: '9', section: 'A', email: 'neha@school.com', password: 'Teacher@123', subject: 'English & SST' }
+    ];
+
+    // Default Students (Each with Email & Password, no Admission Number)
+    const DEFAULT_STUDENTS = [
+      { id: 'st-1', name: 'Aarav Sharma', rollNo: 1, classNum: '10', section: 'A', parent: 'Vikram Sharma', phone: '9811023451', email: 'aarav@school.com', password: 'Student@123', present: 130, absent: 6, leave: 4, status: 'Active', todayStatus: 'P', remarks: '' },
+      { id: 'st-2', name: 'Ananya Verma', rollNo: 2, classNum: '10', section: 'A', parent: 'Suresh Verma', phone: '9811023452', email: 'ananya@school.com', password: 'Student@123', present: 135, absent: 3, leave: 2, status: 'Active', todayStatus: 'P', remarks: '' },
+      { id: 'st-3', name: 'Rohan Malhotra', rollNo: 3, classNum: '10', section: 'A', parent: 'Deepak Malhotra', phone: '9811023453', email: 'rohan@school.com', password: 'Student@123', present: 98, absent: 36, leave: 6, status: 'Active', todayStatus: 'A', remarks: 'Medical certificate pending' },
+      { id: 'st-4', name: 'Kabir Singhania', rollNo: 4, classNum: '10', section: 'A', parent: 'Arun Singhania', phone: '9811023455', email: 'kabir@school.com', password: 'Student@123', present: 81, absent: 54, leave: 5, status: 'Active', todayStatus: 'A', remarks: 'Low attendance (<75%)' },
+      { id: 'st-5', name: 'Meera Joshi', rollNo: 5, classNum: '10', section: 'A', parent: 'Prakash Joshi', phone: '9811023456', email: 'meera@school.com', password: 'Student@123', present: 128, absent: 8, leave: 4, status: 'Active', todayStatus: 'L', remarks: 'Approved leave' },
+      { id: 'st-6', name: 'Devansh Gupta', rollNo: 1, classNum: '10', section: 'B', parent: 'Nitin Gupta', phone: '9811023457', email: 'devansh@school.com', password: 'Student@123', present: 102, absent: 33, leave: 5, status: 'Active', todayStatus: 'P', remarks: '' },
+      { id: 'st-7', name: 'Ishita Bansal', rollNo: 2, classNum: '10', section: 'B', parent: 'Gaurav Bansal', phone: '9811023458', email: 'ishita@school.com', password: 'Student@123', present: 133, absent: 5, leave: 2, status: 'Active', todayStatus: 'P', remarks: '' },
+      { id: 'st-8', name: 'Yashvardhan Rao', rollNo: 1, classNum: '9', section: 'A', parent: 'K. Srinivas Rao', phone: '9811023459', email: 'yash@school.com', password: 'Student@123', present: 101, absent: 34, leave: 5, status: 'Active', todayStatus: 'P', remarks: '' },
+      { id: 'st-9', name: 'Sanya Kapoor', rollNo: 2, classNum: '9', section: 'A', parent: 'Rohit Kapoor', phone: '9811023460', email: 'sanya@school.com', password: 'Student@123', present: 129, absent: 7, leave: 4, status: 'Active', todayStatus: 'P', remarks: '' }
+    ];
+
+    // Load from LocalStorage or use Defaults
+    let teachersDB = JSON.parse(localStorage.getItem('sams_v3_teachers')) || DEFAULT_TEACHERS;
+    let studentsDB = JSON.parse(localStorage.getItem('sams_v3_students')) || DEFAULT_STUDENTS;
+    let attendanceDB = JSON.parse(localStorage.getItem('sams_v3_attendance')) || {};
+    const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+    const attendanceKey = (date, cls, sec) => `${date}|${cls}|${sec}`;
+    const isSunday = date => new Date(`${date}T12:00:00`).getDay() === 0;
+
+    function saveDatabase() {
+      localStorage.setItem('sams_v3_teachers', JSON.stringify(teachersDB));
+      localStorage.setItem('sams_v3_students', JSON.stringify(studentsDB));
+      localStorage.setItem('sams_v3_attendance', JSON.stringify(attendanceDB));
+      renderLoginCredentialsHelper();
+    }
+
+    function resetDemoDatabase() {
+      localStorage.removeItem('sams_v3_teachers');
+      localStorage.removeItem('sams_v3_students');
+      localStorage.removeItem('sams_v3_attendance');
+      attendanceDB = {};
+      teachersDB = JSON.parse(JSON.stringify(DEFAULT_TEACHERS));
+      studentsDB = JSON.parse(JSON.stringify(DEFAULT_STUDENTS));
+      saveDatabase();
+      showToast('Demo accounts reset to default!', 'success');
+    }
+
+    // Active Logged-In User Session
+    let currentUser = null; // { role: 'admin'|'teacher'|'student', data: {...} }
+    let activeView = 'admin-dashboard';
+    let classChartInstance = null;
+
+    // Navigation Menus per Role (No "My Attendance" for Teacher - Teacher only checks/marks their assigned class's attendance!)
+    const roleMenus = {
+      admin: [
+        { id: 'admin-dashboard', label: 'Admin Dashboard', icon: 'layout-dashboard' },
+        { id: 'admin-students', label: 'Students (Email & Password)', icon: 'users' },
+        { id: 'admin-teachers', label: 'Teachers (Email & Password)', icon: 'briefcase' },
+        { id: 'admin-attendance', label: 'Class Attendance Register', icon: 'check-square' },
+        { id: 'admin-tracker', label: '75% CBSE Tracker', icon: 'gauge' },
+        { id: 'admin-reports', label: 'Attendance Reports', icon: 'file-bar-chart-2' },
+        { id: 'student-portal', label: 'Preview Student Portal', icon: 'calendar-days' }
+      ],
+      teacher: [
+        { id: 'admin-attendance', label: 'Class Attendance Register', icon: 'check-square' },
+        { id: 'admin-students', label: 'Student Management', icon: 'users' },
+        { id: 'admin-tracker', label: '75% CBSE Tracker', icon: 'gauge' },
+        { id: 'admin-reports', label: 'Attendance Reports', icon: 'file-text' },
+        { id: 'student-portal', label: 'Student Portal Access', icon: 'contact' }
+      ],
+      student: [
+        { id: 'student-portal', label: 'My Attendance & Calendar', icon: 'layout-dashboard' }
+      ]
+    };
+
+    // --- INITIALIZATION ---
+    window.addEventListener('DOMContentLoaded', () => {
+      renderLoginCredentialsHelper();
+      document.getElementById('mark-date').value = todayISO();
+      document.getElementById('report-from-date').value = todayISO();
+      document.getElementById('report-to-date').value = todayISO();
+      initCharts();
+      lucide.createIcons();
+    });
+
+    // Render clickable credential list on the login screen so testing is effortless
+    function renderLoginCredentialsHelper() {
+      const container = document.getElementById('login-credentials-helper');
+      if (!container) return;
+
+      let html = `
+        <div onclick="fillCredentials('${ADMIN_ACCOUNT.email}', '${ADMIN_ACCOUNT.password}')"
+          class="p-2 rounded-xl bg-white/15 hover:bg-white/25 cursor-pointer flex items-center justify-between transition">
+          <div>
+            <span class="font-bold text-emerald-300">[ADMIN]</span>
+            <span class="font-semibold text-white ml-1">Full School Control</span>
+          </div>
+          <span class="font-mono text-[11px] text-blue-100">${ADMIN_ACCOUNT.email} / ${ADMIN_ACCOUNT.password}</span>
+        </div>
+      `;
+
+      teachersDB.forEach(t => {
+        html += `
+          <div onclick="fillCredentials('${t.email}', '${t.password}')"
+            class="p-2 rounded-xl bg-white/5 hover:bg-white/15 cursor-pointer flex items-center justify-between transition">
+            <div>
+              <span class="font-bold text-amber-300">[TEACHER • Class ${t.classNum}-${t.section}]</span>
+              <span class="text-white ml-1">${t.name}</span>
+            </div>
+            <span class="font-mono text-[11px] text-blue-100">${t.email} / ${t.password}</span>
+          </div>
+        `;
+      });
+
+      studentsDB.slice(0, 5).forEach(s => {
+        html += `
+          <div onclick="fillCredentials('${s.email}', '${s.password}')"
+            class="p-2 rounded-xl bg-white/5 hover:bg-white/15 cursor-pointer flex items-center justify-between transition">
+            <div>
+              <span class="font-bold text-sky-300">[STUDENT • ${s.classNum}-${s.section}]</span>
+              <span class="text-white ml-1">${s.name}</span>
+            </div>
+            <span class="font-mono text-[11px] text-blue-100">${s.email} / ${s.password}</span>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function fillCredentials(email, password) {
+      document.getElementById('login-email').value = email;
+      document.getElementById('login-password').value = password;
+      document.getElementById('login-error-box').classList.add('hidden');
+    }
+
+    // --- REAL EMAIL & PASSWORD LOGIN HANDLER ---
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim().toLowerCase();
+      const pass = document.getElementById('login-password').value.trim();
+      const errBox = document.getElementById('login-error-box');
+      const errText = document.getElementById('login-error-text');
+
+      errBox.classList.add('hidden');
+
+      // 1. Check Admin
+      if (email === ADMIN_ACCOUNT.email.toLowerCase() && pass === ADMIN_ACCOUNT.password) {
+        loginSuccess({ role: 'admin', data: ADMIN_ACCOUNT });
+        return;
+      }
+
+      // 2. Check Teachers DB
+      const matchedTeacher = teachersDB.find(t => t.email.toLowerCase() === email && t.password === pass);
+      if (matchedTeacher) {
+        loginSuccess({ role: 'teacher', data: matchedTeacher });
+        return;
+      }
+
+      // 3. Check Students DB
+      const matchedStudent = studentsDB.find(s => s.email.toLowerCase() === email && s.password === pass);
+      if (matchedStudent) {
+        if (matchedStudent.status === 'Inactive') {
+          errText.textContent = 'Your student account has been deactivated by the Admin.';
+          errBox.classList.remove('hidden');
+          return;
+        }
+        loginSuccess({ role: 'student', data: matchedStudent });
+        return;
+      }
+
+      // Invalid Credentials
+      errText.textContent = 'Invalid Email or Password! Please check your credentials and try again.';
+      errBox.classList.remove('hidden');
+    }
+
+    function loginSuccess(userSession) {
+      currentUser = userSession;
+      document.getElementById('auth-view').classList.add('hidden');
+      document.getElementById('app-shell').classList.remove('hidden');
+
+      const roleLabel = document.getElementById('sidebar-role-label');
+      const userName = document.getElementById('sidebar-user-name');
+      const userSub = document.getElementById('sidebar-user-sub');
+      const avatar = document.getElementById('sidebar-avatar');
+      const scopeText = document.getElementById('topbar-scope-text');
+      const demoSel = document.getElementById('student-demo-selector');
+
+      if (currentUser.role === 'admin') {
+        roleLabel.textContent = 'Super Admin Portal';
+        userName.textContent = currentUser.data.name;
+        userSub.textContent = currentUser.data.email;
+        avatar.textContent = 'AD';
+        scopeText.textContent = 'Full School Access (Classes 1–10)';
+        demoSel.classList.remove('hidden');
+
+        // Unlock class/section selectors for Admin
+        document.getElementById('mark-class').disabled = false;
+        document.getElementById('mark-section').disabled = false;
+        document.getElementById('student-filter-class').disabled = false;
+        document.getElementById('student-filter-section').disabled = false;
+        document.getElementById('student-admin-actions').classList.remove('hidden');
+
+        refreshAllViews();
+        navigateTo('admin-dashboard');
+        showToast('Logged in as School Administrator!', 'success');
+
+      } else if (currentUser.role === 'teacher') {
+        const t = currentUser.data;
+        const initials = t.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        roleLabel.textContent = `Class ${t.classNum}-${t.section} Teacher`;
+        userName.textContent = t.name;
+        userSub.textContent = `${t.email} • Class ${t.classNum}-${t.section}`;
+        avatar.textContent = initials;
+        scopeText.textContent = 'Student & academic management access';
+        demoSel.classList.remove('hidden');
+
+        // Teachers can manage student records and attendance across all classes.
+        ['mark-class','mark-section','student-filter-class','student-filter-section',
+         'report-class-filter','report-section-filter'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) { el.disabled = false; el.value = 'ALL'; }
+        });
+        document.getElementById('student-admin-actions').classList.remove('hidden');
+
+        refreshAllViews();
+        // Teacher lands DIRECTLY on their Class Attendance Check & Mark page!
+        navigateTo('admin-attendance');
+        showToast(`Welcome ${t.name}! Directly opened Class ${t.classNum}-${t.section} Attendance.`, 'success');
+
+      } else if (currentUser.role === 'student') {
+        const s = currentUser.data;
+        const initials = s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        roleLabel.textContent = 'Student Portal';
+        userName.textContent = s.name;
+        userSub.textContent = `Class ${s.classNum}-${s.section} • Roll #${String(s.rollNo).padStart(2, '0')}`;
+        avatar.textContent = initials;
+        scopeText.textContent = `Student: ${s.name} (${s.classNum}-${s.section})`;
+        demoSel.classList.add('hidden');
+
+        renderStudentPortal(s.id);
+        navigateTo('student-portal');
+        showToast(`Welcome ${s.name}! Viewing your personal attendance record.`, 'success');
+      }
+    }
+
+    function logoutUser() {
+      currentUser = null;
+      document.getElementById('app-shell').classList.add('hidden');
+      document.getElementById('auth-view').classList.remove('hidden');
+      renderLoginCredentialsHelper();
+      lucide.createIcons();
+      showToast('Logged out successfully.', 'info');
+    }
+
+    function togglePasswordVisibility() {
+      const pwd = document.getElementById('login-password');
+      pwd.type = pwd.type === 'password' ? 'text' : 'password';
+    }
+
+    // --- SIDEBAR & VIEW NAVIGATION ---
+    function renderSidebar() {
+      if (!currentUser) return;
+      const nav = document.getElementById('sidebar-nav');
+      const items = roleMenus[currentUser.role] || [];
+      nav.innerHTML = items.map(item => {
+        const active = item.id === activeView;
+        return `
+          <button onclick="navigateTo('${item.id}')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
+            active
+              ? 'bg-white text-navy shadow-xs'
+              : 'text-blue-100 hover:bg-white/10 hover:text-white'
+          }">
+            <i data-lucide="${item.icon}" class="w-4 h-4"></i>
+            <span>${item.label}</span>
+          </button>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function navigateTo(viewId) {
+      activeView = viewId;
+      const allViews = [
+        'admin-dashboard',
+        'admin-students',
+        'admin-attendance',
+        'admin-tracker',
+        'admin-reports',
+        'admin-teachers',
+        'student-portal'
+      ];
+      allViews.forEach(v => {
+        const el = document.getElementById('view-' + v);
+        if (el) el.classList.toggle('hidden', v !== viewId);
+      });
+
+      const isTeacher = currentUser && currentUser.role === 'teacher';
+      const teacherClassLabel = isTeacher ? `Class ${currentUser.data.classNum}-${currentUser.data.section}` : 'All Classes';
+
+      const titles = {
+        'admin-dashboard': ['Admin Analytics Dashboard', 'Real-time CBSE attendance metrics across Classes 1 to 10'],
+        'admin-students': [isTeacher ? `My Class Students (${teacherClassLabel})` : 'Student Management & Login Credentials', 'View student profiles, attendance, and login details'],
+        'admin-attendance': [isTeacher ? `${teacherClassLabel} — Student Attendance Register` : 'Class Attendance Register', 'Check and mark Present (P), Absent (A), or Leave (L)'],
+        'admin-tracker': [isTeacher ? `${teacherClassLabel} — 75% Attendance Tracker` : '75% CBSE Attendance Tracker', 'Monitor student compliance against CBSE 75% mandate'],
+        'admin-reports': [isTeacher ? `${teacherClassLabel} — Attendance Report` : 'School Attendance Reports', 'Printable CBSE sheets and Excel/CSV exports'],
+        'admin-teachers': ['Teacher Management & Class Assignment', 'Manage teacher Name, Phone, Assigned Class, Email, and Password'],
+        'student-portal': ['Student Attendance Portal', 'Personal attendance percentage, status, and monthly calendar']
+      };
+
+      if (titles[viewId]) {
+        document.getElementById('topbar-title').textContent = titles[viewId][0];
+        document.getElementById('topbar-subtitle').textContent = titles[viewId][1];
+      }
+
+      renderSidebar();
+      if (window.innerWidth < 1024) {
+        document.getElementById('app-sidebar').classList.add('-translate-x-full');
+        document.getElementById('mobile-backdrop').classList.add('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    function toggleMobileSidebar() {
+      document.getElementById('app-sidebar').classList.toggle('-translate-x-full');
+      document.getElementById('mobile-backdrop').classList.toggle('hidden');
+    }
+
+    // --- HELPER: CALCULATE PERCENTAGE ---
+    function calcStudentPct(student) {
+      return +((student.present / TOTAL_WORKING_DAYS) * 100).toFixed(1);
+    }
+
+    // Admin and teachers can access student records across all classes.
+    function getScopedStudents() {
+      return studentsDB;
+    }
+
+    // --- VIEW 1: ADMIN DASHBOARD ---
+    function renderDashboardWidgets() {
+      document.getElementById('kpi-total-students').textContent = studentsDB.length;
+      document.getElementById('kpi-present-today').textContent = studentsDB.filter(s => s.todayStatus === 'P').length;
+      document.getElementById('kpi-absent-today').textContent = studentsDB.filter(s => s.todayStatus === 'A').length;
+      document.getElementById('kpi-leave-today').textContent = `+ ${studentsDB.filter(s => s.todayStatus === 'L').length} Leave`;
+
+      const avg = studentsDB.length > 0
+        ? (studentsDB.reduce((acc, s) => acc + calcStudentPct(s), 0) / studentsDB.length).toFixed(1)
+        : '0.0';
+      document.getElementById('kpi-overall-pct').textContent = avg + '%';
+
+      const lowList = document.getElementById('dashboard-low-attendance-list');
+      const lowStudents = studentsDB.filter(s => calcStudentPct(s) < 75);
+      if (lowStudents.length === 0) {
+        lowList.innerHTML = `<p class="text-xs text-present font-semibold py-4 text-center">All students are above 75% attendance!</p>`;
+      } else {
+        lowList.innerHTML = lowStudents.map(s => {
+          const pct = calcStudentPct(s);
+          return `
+            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <p class="text-xs font-bold text-primaryText dark:text-white">${s.name} <span class="font-normal text-secondaryText">(Class ${s.classNum}-${s.section})</span></p>
+                <p class="text-[11px] text-secondaryText dark:text-slate-400">Roll #${String(s.rollNo).padStart(2, '0')} • ${s.email}</p>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">${pct}%</span>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function initCharts() {
+      const canvas = document.getElementById('classComparisonChart');
+      if (!canvas) return;
+      const ctxBar = canvas.getContext('2d');
+      classChartInstance = new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+          labels: ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'],
+          datasets: [{
+            label: 'Attendance %',
+            data: [93.4, 94.1, 91.8, 92.5, 90.2, 91.0, 89.6, 92.1, 88.4, 93.2],
+            backgroundColor: '#173B67',
+            borderRadius: 6,
+            barThickness: 22
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { min: 60, max: 100, ticks: { callback: v => v + '%' } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    // --- VIEW 2: STUDENT MANAGEMENT (SHOWS EMAIL & PASSWORD IN ADMIN PANEL) ---
+    function renderStudentTable() {
+      const search = (document.getElementById('student-search-input')?.value || '').toLowerCase();
+      const cls = document.getElementById('student-filter-class')?.value || 'ALL';
+      const sec = document.getElementById('student-filter-section')?.value || 'ALL';
+      const canManageStudents = !currentUser || ['admin','teacher'].includes(currentUser.role);
+
+      const sourceList = getScopedStudents();
+      const filtered = sourceList.filter(s => {
+        const matchSearch =
+          s.name.toLowerCase().includes(search) ||
+          s.email.toLowerCase().includes(search) ||
+          s.parent.toLowerCase().includes(search) ||
+          String(s.rollNo).includes(search);
+        const matchClass = cls === 'ALL' || s.classNum === cls;
+        const matchSec = sec === 'ALL' || s.section === sec;
+        return matchSearch && matchClass && matchSec;
+      });
+
+      const tbody = document.getElementById('student-table-body');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-secondaryText">No students found in this class.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(s => {
+        const pct = calcStudentPct(s);
+        const initials = s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const badgeColor = pct >= 75 ? 'bg-emerald-50 text-present border-emerald-200' : 'bg-red-50 text-absent border-red-200';
+
+        return `
+          <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-navy/10 dark:bg-slate-700 text-navy dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0">
+                  ${initials}
+                </div>
+                <div>
+                  <p class="font-bold text-primaryText dark:text-white">${s.name}</p>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded ${s.status === 'Active' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}">${s.status}</span>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-4 font-bold">#${String(s.rollNo).padStart(2, '0')}</td>
+            <td class="py-3 px-4">
+              <span class="px-2.5 py-1 rounded-lg bg-navy-50 dark:bg-slate-800 text-navy dark:text-blue-300 font-semibold">
+                Class ${s.classNum}-${s.section}
+              </span>
+            </td>
+            <td class="py-3 px-4">
+              <p class="font-medium text-primaryText dark:text-slate-200">${s.parent}</p>
+              <p class="text-[11px] text-secondaryText">${s.phone}</p>
+            </td>
+            <td class="py-3 px-4">
+              <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 inline-block">
+                <p class="text-xs font-semibold text-navy dark:text-blue-300">${s.email}</p>
+                <p class="text-[11px] font-mono text-secondaryText">Pass: <strong class="text-primaryText dark:text-white">${canManageStudents ? s.password : '••••••••'}</strong></p>
+              </div>
+            </td>
+            <td class="py-3 px-4">
+              <span class="px-2.5 py-1 rounded-full border font-bold ${badgeColor}">${pct}%</span>
+            </td>
+            <td class="py-3 px-4 text-right space-x-1 whitespace-nowrap">
+              ${
+                canManageStudents
+                  ? `<button onclick="openEditStudentModal('${s.id}')" class="px-2.5 py-1 rounded-lg bg-navy/10 dark:bg-slate-800 text-navy dark:text-blue-300 hover:bg-navy hover:text-white font-semibold transition inline-flex items-center gap-1">
+                       <i data-lucide="pencil" class="w-3 h-3"></i> Edit
+                     </button>
+                     <button onclick="openDeleteStudentModal('${s.id}')" class="px-2.5 py-1 rounded-lg bg-red-50 text-absent border border-red-200 hover:bg-absent hover:text-white font-semibold transition inline-flex items-center gap-1">
+                       <i data-lucide="trash-2" class="w-3 h-3"></i> Delete
+                     </button>`
+                  : `<button onclick="openStudentPortal('${s.id}')" class="px-2.5 py-1 rounded-lg bg-navy/10 dark:bg-slate-800 text-navy dark:text-blue-300 font-semibold">View Portal</button>`
+              }
+            </td>
+          </tr>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    // --- ADD & EDIT STUDENT HANDLERS ---
+    function openAddStudentModal() {
+      document.getElementById('student-form-error').classList.add('hidden');
+      document.getElementById('add-student-modal').classList.remove('hidden');
+      document.getElementById('add-student-modal').classList.add('flex');
+    }
+
+    function closeAddStudentModal() {
+      document.getElementById('add-student-modal').classList.add('hidden');
+      document.getElementById('add-student-modal').classList.remove('flex');
+    }
+
+    function handleAddStudentSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-st-name').value.trim();
+      const rollNo = parseInt(document.getElementById('new-st-roll').value, 10);
+      const classNum = document.getElementById('new-st-class').value;
+      const section = document.getElementById('new-st-section').value;
+      const parent = document.getElementById('new-st-parent').value.trim();
+      const phone = document.getElementById('new-st-phone').value.trim();
+      const email = document.getElementById('new-st-email').value.trim().toLowerCase();
+      const password = document.getElementById('new-st-pass').value.trim();
+      const errBox = document.getElementById('student-form-error');
+
+      if (studentsDB.some(s => s.classNum === classNum && s.section === section && s.rollNo === rollNo)) {
+        errBox.textContent = `Roll Number #${rollNo} already exists in Class ${classNum}-${section}.`;
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      if (studentsDB.some(s => s.email.toLowerCase() === email) || teachersDB.some(t => t.email.toLowerCase() === email) || email === ADMIN_ACCOUNT.email) {
+        errBox.textContent = `Email "${email}" is already in use by another account.`;
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      studentsDB.unshift({
+        id: 'st-' + Date.now(),
+        name,
+        rollNo,
+        classNum,
+        section,
+        parent,
+        phone,
+        email,
+        password,
+        present: 130,
+        absent: 6,
+        leave: 4,
+        status: 'Active',
+        todayStatus: 'P',
+        remarks: ''
+      });
+
+      saveDatabase();
+      closeAddStudentModal();
+      document.getElementById('add-student-form').reset();
+      refreshAllViews();
+      showToast(`Student "${name}" added! Login: ${email} / ${password}`, 'success');
+    }
+
+    function openEditStudentModal(studentId) {
+      const st = studentsDB.find(s => s.id === studentId);
+      if (!st) return;
+
+      document.getElementById('edit-st-id').value = st.id;
+      document.getElementById('edit-st-name').value = st.name;
+      document.getElementById('edit-st-roll').value = st.rollNo;
+      document.getElementById('edit-st-class').value = st.classNum;
+      document.getElementById('edit-st-section').value = st.section;
+      document.getElementById('edit-st-parent').value = st.parent;
+      document.getElementById('edit-st-phone').value = st.phone;
+      document.getElementById('edit-st-email').value = st.email;
+      document.getElementById('edit-st-pass').value = st.password;
+      document.getElementById('edit-st-present').value = st.present;
+      document.getElementById('edit-st-status').value = st.status;
+
+      document.getElementById('edit-student-form-error').classList.add('hidden');
+      document.getElementById('edit-student-modal').classList.remove('hidden');
+      document.getElementById('edit-student-modal').classList.add('flex');
+    }
+
+    function closeEditStudentModal() {
+      document.getElementById('edit-student-modal').classList.add('hidden');
+      document.getElementById('edit-student-modal').classList.remove('flex');
+    }
+
+    function handleEditStudentSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('edit-st-id').value;
+      const name = document.getElementById('edit-st-name').value.trim();
+      const rollNo = parseInt(document.getElementById('edit-st-roll').value, 10);
+      const classNum = document.getElementById('edit-st-class').value;
+      const section = document.getElementById('edit-st-section').value;
+      const parent = document.getElementById('edit-st-parent').value.trim();
+      const phone = document.getElementById('edit-st-phone').value.trim();
+      const email = document.getElementById('edit-st-email').value.trim().toLowerCase();
+      const password = document.getElementById('edit-st-pass').value.trim();
+      const present = Math.min(TOTAL_WORKING_DAYS, Math.max(0, parseInt(document.getElementById('edit-st-present').value, 10) || 0));
+      const status = document.getElementById('edit-st-status').value;
+      const errBox = document.getElementById('edit-student-form-error');
+
+      if (studentsDB.some(s => s.id !== id && s.classNum === classNum && s.section === section && s.rollNo === rollNo)) {
+        errBox.textContent = `Roll Number #${rollNo} is already assigned in Class ${classNum}-${section}.`;
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      if (studentsDB.some(s => s.id !== id && s.email.toLowerCase() === email) || teachersDB.some(t => t.email.toLowerCase() === email)) {
+        errBox.textContent = `Email "${email}" is already used by another user.`;
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      const st = studentsDB.find(s => s.id === id);
+      if (!st) return;
+
+      st.name = name;
+      st.rollNo = rollNo;
+      st.classNum = classNum;
+      st.section = section;
+      st.parent = parent;
+      st.phone = phone;
+      st.email = email;
+      st.password = password;
+      st.present = present;
+      st.absent = Math.max(0, TOTAL_WORKING_DAYS - present - st.leave);
+      st.status = status;
+
+      saveDatabase();
+      closeEditStudentModal();
+      refreshAllViews();
+      showToast(`Updated details & login credentials for "${name}".`, 'success');
+    }
+
+    function openDeleteStudentModal(studentId) {
+      const st = studentsDB.find(s => s.id === studentId);
+      if (!st) return;
+      document.getElementById('delete-st-id').value = st.id;
+      document.getElementById('delete-st-summary').textContent = `${st.name} (Class ${st.classNum}-${st.section})`;
+      document.getElementById('delete-student-modal').classList.remove('hidden');
+      document.getElementById('delete-student-modal').classList.add('flex');
+    }
+
+    function closeDeleteStudentModal() {
+      document.getElementById('delete-student-modal').classList.add('hidden');
+      document.getElementById('delete-student-modal').classList.remove('flex');
+    }
+
+    function confirmDeleteStudent() {
+      const id = document.getElementById('delete-st-id').value;
+      studentsDB = studentsDB.filter(s => s.id !== id);
+      saveDatabase();
+      closeDeleteStudentModal();
+      refreshAllViews();
+      showToast('Student deleted.', 'info');
+    }
+
+    // --- VIEW 3: CLASS ATTENDANCE CHECK & MARKING (LOCKED TO SINGLE CLASS FOR TEACHER) ---
+    function handleAttendanceDateChange() {
+      loadAttendanceSheet();
+    }
+
+    function attendanceContext() {
+      const date = document.getElementById('mark-date').value;
+      const cls = document.getElementById('mark-class').value;
+      const sec = document.getElementById('mark-section').value;
+      return { date, cls, sec, key: attendanceKey(date, cls, sec) };
+    }
+    function attendanceIsLocked(date, key) { return date < todayISO() && !!attendanceDB[key]; }
+    function attendanceIsFuture(date) { return date > todayISO(); }
+    function loadAttendanceSheet() {
+      const c = document.getElementById('mark-class').value, sec = document.getElementById('mark-section').value;
+      document.getElementById('attendance-heading-title').textContent = `Class ${c}-${sec} Student Attendance Register`;
+      document.getElementById('attendance-heading-sub').textContent = currentUser?.role === 'teacher'
+        ? 'Teacher access: select any class and section to check or update attendance.'
+        : 'Admin Mode: Select any class and section to check or update attendance.';
+      const {date,key} = attendanceContext();
+      const locked = attendanceIsLocked(date,key);
+      const future = attendanceIsFuture(date);
+      const sunday = isSunday(date);
+      const badge = document.getElementById('attendance-lock-badge');
+      badge.textContent = future ? 'Future date not allowed' : locked ? 'Submitted • Locked' : sunday ? 'Sunday holiday • Marking allowed' : 'Open for Marking';
+      badge.className = `px-2.5 py-0.5 rounded-full text-xs font-semibold ${locked || future ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`;
+      document.getElementById('attendance-footer-note').textContent = future ? 'Future attendance cannot be entered.' : locked ? 'This date has already been submitted and is permanently locked.' : sunday ? 'Sunday is a default holiday. You may still record attendance if the school operates.' : 'Unsubmitted past dates can still be completed; once submitted they are locked.';
+      renderAttendanceRows();
+    }
+    function renderAttendanceRows() {
+      const {date,cls,sec,key} = attendanceContext();
+      const saved = attendanceDB[key];
+      const locked = attendanceIsLocked(date,key) || attendanceIsFuture(date);
+      const search = (document.getElementById('sheet-search')?.value || '').toLowerCase();
+      const allInSection = studentsDB.filter(s => s.classNum === cls && s.section === sec);
+      const list = allInSection.filter(s => s.name.toLowerCase().includes(search) || String(s.rollNo).includes(search));
+      const record = saved?.records || {};
+      const draft = (window._attendanceDraft && window._attendanceDraft[key]) || {};
+      const statusOf = s => draft[s.id] || record[s.id] || (isSunday(date) ? 'H' : '');
+      document.getElementById('sheet-count-total').textContent = allInSection.length;
+      document.getElementById('sheet-count-present').textContent = allInSection.filter(s => statusOf(s)==='P').length;
+      document.getElementById('sheet-count-absent').textContent = allInSection.filter(s => statusOf(s)==='A').length;
+      document.getElementById('sheet-count-leave').textContent = allInSection.filter(s => statusOf(s)==='L').length;
+      const tbody = document.getElementById('attendance-sheet-body');
+      if (!list.length) { tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-secondaryText">No students enrolled in Class ${cls}-${sec}.</td></tr>`; return; }
+      tbody.innerHTML = list.map(st => {
+        const pct = calcStudentPct(st), status = statusOf(st);
+        const button = (code,label,color) => `<button type="button" ${locked?'disabled':''} onclick="setStudentStatus('${st.id}','${code}')" class="w-24 py-1.5 rounded-xl font-bold text-xs transition disabled:opacity-40 disabled:cursor-not-allowed ${status===code?color:'bg-slate-100 dark:bg-slate-800 text-secondaryText'}">${label}</button>`;
+        return `<tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40"><td class="py-3.5 px-4 font-bold">#${String(st.rollNo).padStart(2,'0')}</td><td class="py-3.5 px-4"><p class="font-bold">${st.name}</p><p class="text-[11px] text-secondaryText">Guardian: ${st.parent} (${st.phone})</p></td><td class="py-3.5 px-4"><span class="font-bold ${pct<75?'text-absent':'text-present'}">${pct}%</span><span class="text-[11px] block text-secondaryText">${st.present}/${TOTAL_WORKING_DAYS} days</span></td><td class="py-3.5 px-4"><div class="flex items-center justify-center gap-1.5">${button('P','P • Present','bg-present text-white')}${button('A','A • Absent','bg-absent text-white')}${button('L','L • Leave','bg-leave text-white')}</div><p class="text-center text-[10px] mt-1 text-secondaryText">${status==='H'?'Sunday Holiday':status==='P'?'Present':status==='A'?'Absent':status==='L'?'Leave':'Not marked'}</p></td><td class="py-3.5 px-4"><input ${locked?'disabled':''} type="text" value="${(record[st.id+'_remark'] || '')}" onchange="updateStudentRemark('${st.id}',this.value)" placeholder="Optional note..." class="w-full px-3 py-1.5 text-xs rounded-xl border bg-slate-50 dark:bg-slate-800 disabled:opacity-50" /></td></tr>`;
+      }).join('');
+    }
+    function setStudentStatus(id,status) {
+      const {date,key} = attendanceContext();
+      if (attendanceIsFuture(date) || attendanceIsLocked(date,key)) { showToast('Future dates are not allowed and submitted past attendance cannot be changed.','info'); return; }
+      const st = studentsDB.find(x=>x.id===id);
+      if (!st) return;
+      if (!window._attendanceDraft) window._attendanceDraft = {};
+      const draftKey = key;
+      if (!window._attendanceDraft[draftKey]) window._attendanceDraft[draftKey] = {};
+      window._attendanceDraft[draftKey][id] = status;
+      renderAttendanceRows();
+    }
+    function updateStudentRemark(id,val) {
+      const {date,key}=attendanceContext();
+      if (attendanceIsFuture(date)||attendanceIsLocked(date,key)) return;
+      if (!window._attendanceDraft) window._attendanceDraft={};
+      if (!window._attendanceDraft[key]) window._attendanceDraft[key]={};
+      window._attendanceDraft[key][id+'_remark']=val;
+    }
+    function markAllStatus(status) {
+      const {date,key,cls,sec}=attendanceContext();
+      if (attendanceIsFuture(date)||attendanceIsLocked(date,key)) { showToast('This date cannot be edited.','info'); return; }
+      if (!window._attendanceDraft) window._attendanceDraft={};
+      if (!window._attendanceDraft[key]) window._attendanceDraft[key]={};
+      studentsDB.filter(s=>s.classNum===cls&&s.section===sec).forEach(s=>window._attendanceDraft[key][s.id]=status);
+      renderAttendanceRows();
+    }
+    function submitFinalAttendance() {
+      const {date,key,cls,sec}=attendanceContext();
+      if (attendanceIsFuture(date)) { showToast('You cannot mark attendance for a future date.','info'); return; }
+      if (date < todayISO() && attendanceDB[key]) { showToast('This past date has already been submitted and is locked.','info'); return; }
+      const classStudents=studentsDB.filter(s=>s.classNum===cls&&s.section===sec);
+      const draft=(window._attendanceDraft&&window._attendanceDraft[key])||{};
+      const records={};
+      classStudents.forEach(st=>{ records[st.id]=draft[st.id] || (isSunday(date)?'H':''); if(draft[st.id+'_remark']) records[st.id+'_remark']=draft[st.id+'_remark']; });
+      if (!isSunday(date) && classStudents.some(st=>!records[st.id])) { showToast('Please mark every student before submitting attendance.','info'); return; }
+      const previous = attendanceDB[key]?.records || {};
+      classStudents.forEach(st => {
+        const oldStatus = previous[st.id], newStatus = records[st.id];
+        if (oldStatus && ['P','A','L'].includes(oldStatus)) st[oldStatus==='P'?'present':oldStatus==='A'?'absent':'leave'] = Math.max(0,(st[oldStatus==='P'?'present':oldStatus==='A'?'absent':'leave']||0)-1);
+        if (newStatus && ['P','A','L'].includes(newStatus)) st[newStatus==='P'?'present':newStatus==='A'?'absent':'leave'] = (st[newStatus==='P'?'present':newStatus==='A'?'absent':'leave']||0)+1;
+        if (date === todayISO()) st.todayStatus = newStatus || (isSunday(date)?'H':'');
+      });
+      attendanceDB[key]={date, classNum:cls, section:sec, submittedAt:new Date().toISOString(), records};
+      delete window._attendanceDraft?.[key];
+      saveDatabase(); loadAttendanceSheet(); renderReportsView(); renderDashboardWidgets();
+      showToast(`Attendance for Class ${cls}-${sec} on ${date} submitted and locked.`, 'success');
+    }
+
+    // --- VIEW 4: 75% TRACKER ---
+    function renderTrackerView() {
+      const source = getScopedStudents();
+      const sorted = [...source].sort((a, b) => calcStudentPct(a) - calcStudentPct(b));
+      const tbody = document.getElementById('tracker-table-body');
+
+      tbody.innerHTML = sorted.map(s => {
+        const pct = calcStudentPct(s);
+        const catClass = pct >= 75 ? 'bg-emerald-50 text-present border-emerald-200' : 'bg-red-50 text-absent border-red-200';
+        const needed = Math.max(0, Math.ceil(200 * 0.75) - s.present);
+
+        return `
+          <tr>
+            <td class="py-3 px-3 font-bold">${s.name} <span class="text-secondaryText font-mono">(Roll #${String(s.rollNo).padStart(2, '0')})</span></td>
+            <td class="py-3 px-3">Class ${s.classNum}-${s.section}</td>
+            <td class="py-3 px-3 font-mono">${s.present} / ${TOTAL_WORKING_DAYS}</td>
+            <td class="py-3 px-3 font-bold ${pct < 75 ? 'text-absent' : 'text-present'}">${pct}%</td>
+            <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-full border text-[11px] font-semibold ${catClass}">${pct >= 75 ? 'Satisfactory (≥75%)' : 'Below 75% Alert'}</span></td>
+            <td class="py-3 px-3 font-semibold">${pct >= 75 ? '<span class="text-present">✓ Eligible</span>' : `<span class="text-absent">Needs ${needed} more present days</span>`}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // --- VIEW 5: DATE-RANGE REPORTS ---
+    function getReportRange() {
+      const from = document.getElementById('report-from-date')?.value || todayISO();
+      const to = document.getElementById('report-to-date')?.value || todayISO();
+      return { from, to: from <= to ? to : from };
+    }
+    function getFilteredReportData() {
+      const {from,to}=getReportRange();
+      const cls=document.getElementById('report-class-filter')?.value||'ALL';
+      const sec=document.getElementById('report-section-filter')?.value||'ALL';
+      const source=getScopedStudents().filter(st=>(cls==='ALL'||st.classNum===cls)&&(sec==='ALL'||st.section===sec));
+      const registers=Object.values(attendanceDB).filter(r=>r.date>=from&&r.date<=to&&(cls==='ALL'||r.classNum===cls)&&(sec==='ALL'||r.section===sec));
+      const rows=source.map(st=>{
+        let present=0,absent=0,leave=0,holiday=0;
+        registers.filter(r=>r.classNum===st.classNum&&r.section===st.section).forEach(r=>{
+          const status=r.records?.[st.id];
+          if(status==='P')present++; else if(status==='A')absent++; else if(status==='L')leave++; else if(status==='H')holiday++;
+        });
+        const working=present+absent+leave;
+        return {st,present,absent,leave,holiday,working,pct:working?((present/working)*100).toFixed(1):'0.0'};
+      });
+      return {from,to,registers,rows};
+    }
+    function renderReportsView() {
+      const {from,to,registers,rows}=getFilteredReportData();
+      const tbody=document.getElementById('report-table-body');
+      tbody.innerHTML=rows.map(({st,present,absent,leave,holiday,working,pct})=>
+        `<tr><td class="py-3 px-4">#${String(st.rollNo).padStart(2,'0')}</td><td class="py-3 px-4 font-bold">${st.name}</td><td class="py-3 px-4">Class ${st.classNum}-${st.section}</td><td class="py-3 px-4">${working}</td><td class="py-3 px-4 text-present">${present}</td><td class="py-3 px-4 text-absent">${absent}</td><td class="py-3 px-4 text-leave">${leave}</td><td class="py-3 px-4 font-bold">${pct}%</td><td class="py-3 px-4 font-bold">${holiday} Holiday(s)</td></tr>`
+      ).join('');
+      document.getElementById('report-date-status').textContent=`${registers.length} submitted class register(s) • ${rows.length} student(s)`;
+      document.querySelector('#printable-report-title').textContent=`Attendance Report — ${from} to ${to}`;
+    }
+    function exportReportCSV() {
+      const {from,to,registers,rows}=getFilteredReportData();
+      const headers=['From Date','To Date','Roll No','Student Name','Class','Section','Working Days Marked','Present','Absent','Leave','Holiday','Attendance %'];
+      const data=rows.map(({st,present,absent,leave,holiday,working,pct})=>[from,to,st.rollNo,st.name,st.classNum,st.section,working,present,absent,leave,holiday,pct+'%']);
+      const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+      const csv=[headers,...data].map(row=>row.map(esc).join(',')).join('\\r\\n');
+      const blob=new Blob(['\\ufeff',csv],{type:'text/csv;charset=utf-8;'});
+      const url=URL.createObjectURL(blob),a=document.createElement('a'); a.href=url; a.download=`SAMS_Attendance_${from}_to_${to}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      showToast('Selected date-range attendance report downloaded.','success');
+    }
+
+    function exportStudentsCSV() {
+      exportReportCSV();
+    }
+
+    // --- VIEW 6: TEACHER MANAGEMENT (NAME, PHONE, SINGLE CLASS, EMAIL, PASSWORD) ---
+    function renderTeachersView() {
+      const grid = document.getElementById('teacher-cards-grid');
+      grid.innerHTML = teachersDB.map(t => `
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="px-3 py-1 rounded-lg bg-navy text-white font-bold text-xs">
+                Assigned: Class ${t.classNum} - Section ${t.section}
+              </span>
+              <span class="text-xs font-semibold text-secondaryText">${t.subject}</span>
+            </div>
+            <div>
+              <h3 class="font-bold text-base text-primaryText dark:text-white">${t.name}</h3>
+              <p class="text-xs text-secondaryText dark:text-slate-400 mt-0.5">Phone: <strong class="text-primaryText dark:text-slate-200">${t.phone}</strong></p>
+            </div>
+            <!-- Email & Password Box in Admin Panel -->
+            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-1 text-xs">
+              <p class="text-[10px] font-bold uppercase text-secondaryText">Teacher Login Credentials</p>
+              <p>Email: <strong class="text-navy dark:text-blue-300">${t.email}</strong></p>
+              <p>Password: <strong class="font-mono text-primaryText dark:text-white">${t.password}</strong></p>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
+            <button onclick="openEditTeacherModal('${t.id}')" class="flex-1 py-2 px-3 rounded-xl bg-navy/10 dark:bg-slate-800 text-navy dark:text-blue-300 hover:bg-navy hover:text-white font-semibold transition flex items-center justify-center gap-1.5">
+              <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Edit Teacher (Name, Class, Email, Pass)
+            </button>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function openAddTeacherModal() {
+      document.getElementById('teacher-mode').value = 'add';
+      document.getElementById('teacher-id').value = '';
+      document.getElementById('teacher-modal-title').textContent = 'Add New Teacher & Class Assignment';
+      document.getElementById('teacher-form').reset();
+      document.getElementById('t-password').value = 'Teacher@123';
+      document.getElementById('teacher-form-error').classList.add('hidden');
+      document.getElementById('teacher-modal').classList.remove('hidden');
+      document.getElementById('teacher-modal').classList.add('flex');
+    }
+
+    function openEditTeacherModal(teacherId) {
+      const t = teachersDB.find(item => item.id === teacherId);
+      if (!t) return;
+
+      document.getElementById('teacher-mode').value = 'edit';
+      document.getElementById('teacher-id').value = t.id;
+      document.getElementById('teacher-modal-title').textContent = 'Edit Teacher Details & Login Credentials';
+      document.getElementById('teacher-form-error').classList.add('hidden');
+
+      document.getElementById('t-name').value = t.name;
+      document.getElementById('t-phone').value = t.phone;
+      document.getElementById('t-class').value = t.classNum;
+      document.getElementById('t-section').value = t.section;
+      document.getElementById('t-email').value = t.email;
+      document.getElementById('t-password').value = t.password;
+      document.getElementById('t-subject').value = t.subject || 'General';
+
+      document.getElementById('teacher-modal').classList.remove('hidden');
+      document.getElementById('teacher-modal').classList.add('flex');
+    }
+
+    function closeTeacherModal() {
+      document.getElementById('teacher-modal').classList.add('hidden');
+      document.getElementById('teacher-modal').classList.remove('flex');
+    }
+
+    function handleTeacherFormSubmit(e) {
+      e.preventDefault();
+      const mode = document.getElementById('teacher-mode').value;
+      const id = document.getElementById('teacher-id').value;
+      const name = document.getElementById('t-name').value.trim();
+      const phone = document.getElementById('t-phone').value.trim();
+      const classNum = document.getElementById('t-class').value;
+      const section = document.getElementById('t-section').value;
+      const email = document.getElementById('t-email').value.trim().toLowerCase();
+      const password = document.getElementById('t-password').value.trim();
+      const subject = document.getElementById('t-subject').value.trim();
+      const errBox = document.getElementById('teacher-form-error');
+
+      if (teachersDB.some(t => t.email.toLowerCase() === email && (mode === 'add' || t.id !== id)) || studentsDB.some(s => s.email.toLowerCase() === email)) {
+        errBox.textContent = `Email "${email}" is already assigned to another account.`;
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      if (mode === 'add') {
+        teachersDB.unshift({
+          id: 't-' + Date.now(),
+          name,
+          phone,
+          classNum,
+          section,
+          email,
+          password,
+          subject
+        });
+        showToast(`Teacher "${name}" added for Class ${classNum}-${section}!`, 'success');
+      } else {
+        const t = teachersDB.find(item => item.id === id);
+        if (t) {
+          t.name = name;
+          t.phone = phone;
+          t.classNum = classNum;
+          t.section = section;
+          t.email = email;
+          t.password = password;
+          t.subject = subject;
+        }
+        showToast(`Updated teacher "${name}" (Class ${classNum}-${section}).`, 'success');
+      }
+
+      saveDatabase();
+      closeTeacherModal();
+      renderTeachersView();
+    }
+
+    // --- VIEW 7: STUDENT PORTAL ---
+    function populateStudentPortalSelector() {
+      const sel = document.getElementById('student-demo-selector');
+      if (!sel) return;
+      const visible = studentsDB;
+      sel.innerHTML = visible.map(s => `<option value="${s.id}">${s.name} (Class ${s.classNum}-${s.section})</option>`).join('');
+    }
+
+    function openStudentPortal(studentId) {
+      if (!currentUser || !['admin','teacher'].includes(currentUser.role)) return;
+      const st = studentsDB.find(x => x.id === studentId);
+      if (!st) return;
+      document.getElementById('student-demo-selector').value = studentId;
+      renderStudentPortal(studentId);
+      navigateTo('student-portal');
+    }
+
+    function renderStudentPortal(studentId) {
+      const st = studentsDB.find(s => s.id === studentId) || studentsDB[0];
+      if (!st) return;
+      const pct = calcStudentPct(st);
+      const initials = st.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+      document.getElementById('student-portal-avatar').textContent = initials;
+      document.getElementById('student-portal-name').textContent = st.name;
+      document.getElementById('student-portal-class-badge').textContent = `Class ${st.classNum} - Section ${st.section}`;
+      document.getElementById('student-portal-meta').innerHTML = `
+        Roll No: <strong>#${String(st.rollNo).padStart(2, '0')}</strong> • Email: <strong>${st.email}</strong> • Guardian: <strong>${st.parent}</strong>
+      `;
+
+      document.getElementById('st-kpi-pct').textContent = pct + '%';
+      document.getElementById('st-kpi-pct').className = `text-2xl font-bold mt-1 ${pct >= 75 ? 'text-present' : 'text-absent'}`;
+      document.getElementById('st-kpi-badge').textContent = pct >= 75 ? 'Satisfactory (≥75%)' : 'Below 75% Alert';
+
+      const todayLabel = st.todayStatus === 'P' ? 'Present' : st.todayStatus === 'A' ? 'Absent' : 'On Leave';
+      const todayColor = st.todayStatus === 'P' ? 'text-present' : st.todayStatus === 'A' ? 'text-absent' : 'text-leave';
+      document.getElementById('st-kpi-today').textContent = todayLabel;
+      document.getElementById('st-kpi-today').className = `text-2xl font-bold mt-1 ${todayColor}`;
+
+      document.getElementById('st-kpi-present').textContent = st.present;
+      document.getElementById('st-kpi-absent').textContent = st.absent;
+      document.getElementById('st-kpi-leave').textContent = st.leave;
+
+      document.getElementById('st-progress-label').textContent = `${pct}% (Target: 75%)`;
+      document.getElementById('st-progress-bar').style.width = `${Math.min(100, pct)}%`;
+      document.getElementById('st-progress-bar').className = `h-full rounded-full transition-all duration-300 ${pct >= 75 ? 'bg-present' : 'bg-absent'}`;
+
+      const diffDays = st.present - Math.ceil(TOTAL_WORKING_DAYS * 0.75);
+      document.getElementById('st-eligibility-note').innerHTML =
+        diffDays >= 0
+          ? `You are safely above the 75% CBSE requirement by <strong>+${diffDays} Present Days</strong>.`
+          : `Attention: You are <strong>${Math.abs(diffDays)} days short</strong> of 75%. Please attend classes regularly.`;
+
+      // Render 30-day Calendar
+      const calGrid = document.getElementById('student-calendar-grid');
+      let cells = '';
+      for (let day = 1; day <= 30; day++) {
+        const isSunday = (day % 7 === 1);
+        const isHoliday = (day === 15);
+        let statusClass = '';
+        let label = '';
+
+        if (isSunday || isHoliday) {
+          statusClass = 'bg-slate-100 dark:bg-slate-800 text-holiday border-slate-200 dark:border-slate-700';
+          label = isHoliday ? 'Holiday' : 'Sunday';
+        } else if (day === 6) {
+          statusClass = st.todayStatus === 'P'
+            ? 'bg-emerald-50 text-present border-emerald-300 font-bold'
+            : st.todayStatus === 'A'
+            ? 'bg-red-50 text-absent border-red-300 font-bold'
+            : 'bg-amber-50 text-leave border-amber-300 font-bold';
+          label = `Today (${st.todayStatus})`;
+        } else if (day === 4 || (pct < 75 && (day === 10 || day === 18))) {
+          statusClass = 'bg-red-50 text-absent border-red-200 font-bold';
+          label = 'Absent';
+        } else {
+          statusClass = 'bg-emerald-50 text-present border-emerald-200 font-bold';
+          label = 'Present';
+        }
+
+        cells += `
+          <div class="p-2 rounded-xl border text-center ${statusClass}">
+            <span class="text-xs block">${day}</span>
+            <span class="text-[10px] block truncate mt-0.5">${label}</span>
+          </div>
+        `;
+      }
+      calGrid.innerHTML = cells;
+    }
+
+    function refreshAllViews() {
+      renderDashboardWidgets();
+      renderStudentTable();
+      loadAttendanceSheet();
+      renderTrackerView();
+      renderReportsView();
+      renderTeachersView();
+      populateStudentPortalSelector();
+    }
+
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      html.classList.toggle('dark');
+      const isDark = html.classList.contains('dark');
+      document.getElementById('theme-icon').setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+      lucide.createIcons();
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const bg = type === 'success' ? 'bg-present' : 'bg-navy';
+      toast.className = `${bg} text-white px-4 py-3 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3400);
+    }
+  </script>
+</body>
+</html>
